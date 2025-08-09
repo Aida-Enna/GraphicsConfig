@@ -1,5 +1,4 @@
 ﻿using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Bindings.ImGui;
 using Veda;
 
 namespace GraphicsConfig
@@ -142,7 +142,7 @@ namespace GraphicsConfig
         private static unsafe void DrawClippedList(int itemCount, string preview, IReadOnlyList<string> list, out string result)
         {
             result = preview;
-            var clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper_ImGuiListClipper());
+            var clipper = new ImGuiListClipperPtr(ImGuiNative.ImGuiListClipper());
             clipper.Begin(itemCount, ImGui.GetTextLineHeightWithSpacing());
 
             var clipperBreak = false;

@@ -283,7 +283,7 @@ namespace GraphicsConfig
 
                 case ConditionFlag.Fishing:
                 case ConditionFlag.Gathering:
-                case ConditionFlag.Gathering42:
+                case ConditionFlag.ExecutingGatheringAction:
                     if (value)
                     {
                         if (PluginConfig.IsDebug) Print("Flag started");
