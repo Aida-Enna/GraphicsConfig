@@ -20,8 +20,12 @@ namespace GraphicsConfig
         public void Draw()
         {
             if (!IsVisible || !ImGui.Begin("Graphics Config", ref IsVisible, ImGuiWindowFlags.AlwaysAutoResize))
+            {
+                ImGui.End();
                 return;
+            }
 
+            ImGui.End();
             List<string> Presets = new List<string> { "None" };
             Presets.AddRange(Plugin.GetPresets());
 
