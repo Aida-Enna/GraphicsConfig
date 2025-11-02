@@ -1,6 +1,7 @@
 ﻿using BatteryGauge.Battery;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Interface.ImGuiNotification;
+using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -20,8 +21,6 @@ namespace GraphicsConfig
 {
     public class Plugin : IDalamudPlugin
     {
-        public string Name => "GraphicsConfig";
-
         [PluginService] public static IDalamudPluginInterface PluginInterface { get; set; }
         [PluginService] public static IFramework Framework { get; set; }
         [PluginService] public static IChatGui Chat { get; set; }
@@ -32,7 +31,8 @@ namespace GraphicsConfig
 
         public static Configuration PluginConfig { get; set; }
         private PluginCommandManager<Plugin> CommandManager;
-        private PluginUI ui;
+        public readonly WindowSystem WindowSystem = new("GraphicsConfig");
+        private ConfigWindow ConfigWindow { get; init; }
 
         public static readonly CancellationTokenSource BatteryCheckingTask = new();
         public static bool PreviouslyCharging = false;
@@ -47,15 +47,14 @@ namespace GraphicsConfig
             PluginConfig = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             PluginConfig.Initialize(PluginInterface);
 
-            ui = new PluginUI();
-            PluginInterface.UiBuilder.Draw += new System.Action(ui.Draw);
-            PluginInterface.UiBuilder.OpenConfigUi += () =>
-            {
-                PluginUI ui = this.ui;
-                ui.IsVisible = !ui.IsVisible;
-            };
+            ConfigWindow = new ConfigWindow(this);
 
-            ui.IsVisible = !PluginConfig.SavedOnce;
+            WindowSystem.AddWindow(ConfigWindow);
+
+            PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
+            PluginInterface.UiBuilder.OpenConfigUi += () => { ConfigWindow.Toggle(); };
+
+            if (!PluginConfig.SavedOnce) { ConfigWindow.Toggle(); }
 
             string PresetDirectory = Path.Combine(PluginInterface.ConfigDirectory.FullName, "graphical-presets");
 
@@ -386,7 +385,7 @@ namespace GraphicsConfig
         [HelpMessage("Shows Graphics Config configuration options")]
         public void ShowTwitchOptions(string command, string args)
         {
-            ui.IsVisible = !ui.IsVisible;
+            ConfigWindow.Toggle();
         }
 
         [Command("/gdebug")]
@@ -598,12 +597,8 @@ namespace GraphicsConfig
 
             PluginInterface.SavePluginConfig(PluginConfig);
 
-            PluginInterface.UiBuilder.Draw -= ui.Draw;
-            PluginInterface.UiBuilder.OpenConfigUi -= () =>
-            {
-                PluginUI ui = this.ui;
-                ui.IsVisible = !ui.IsVisible;
-            };
+            PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
+            PluginInterface.UiBuilder.OpenConfigUi -= () => { ConfigWindow.Toggle(); };
         }
 
         public void Dispose()

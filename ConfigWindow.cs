@@ -7,25 +7,29 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Windowing;
 using Veda;
 
 namespace GraphicsConfig
 {
-    public class PluginUI
+    public class ConfigWindow: Window, IDisposable
     {
-        public bool IsVisible;
+        private readonly Configuration configuration;
+
+        public ConfigWindow(Plugin plugin) : base("Graphics Config###GC_Config")
+        {
+            Flags = ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar |
+                    ImGuiWindowFlags.NoScrollWithMouse;
+        }
+
+        public void Dispose() { }
+
+        //public bool IsVisible;
         public bool ShowSupport;
         public string CurrentSelection = "No preset";
 
-        public void Draw()
+        public override void Draw()
         {
-            if (!IsVisible || !ImGui.Begin("Graphics Config", ref IsVisible, ImGuiWindowFlags.AlwaysAutoResize))
-            {
-                ImGui.End();
-                return;
-            }
-
-            ImGui.End();
             List<string> Presets = new List<string> { "None" };
             Presets.AddRange(Plugin.GetPresets());
 
@@ -96,7 +100,7 @@ namespace GraphicsConfig
             if (ImGui.Button("Save"))
             {
                 Plugin.PluginConfig.Save();
-                this.IsVisible = false;
+                this.Toggle();
                 Plugin.PluginConfig.SavedOnce = true;
             }
             ImGui.SameLine();
@@ -140,7 +144,6 @@ namespace GraphicsConfig
                 }
                 ImGui.PopStyleColor();
             }
-            ImGui.End();
         }
 
         private static unsafe void DrawClippedList(int itemCount, string preview, IReadOnlyList<string> list, out string result)
