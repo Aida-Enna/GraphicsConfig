@@ -35,16 +35,28 @@ namespace GraphicsConfig
 
             ImGui.Text("Usage: Go to your System Settings -> Graphic Settings and set\nthem how you'd like the preset to be, hit apply, then use the\ncommands below to save and then load them whenever you like.");
             ImGui.Text("Saving a preset: \"/gsave PresetName\"\nLoading a preset: \"/gload PresetName\"\nListing presets: \"/glist\"\nOpen this window: \"/gconfig\"");
-            ImGui.Text("The options below will enable the specified presets when the\ncondition begins (Like entering combat or a cutscene) and revert\nto the default preset after (like killing the enemy or finishing the\ncutscene). If you don't want to use a preset for any of these, just\nselect none for each condition.");
+            ImGui.Text("The options below will enable the specified presets when the\ncondition begins (Like entering combat or a cutscene) and revert\nto the default preset after (like killing the enemy or finishing the\ncutscene). If you don't want to use a preset for any of these, just\nselect none for each condition. You can hover over each one for any\nadditional information about the condition (if it has any).");
             ImGui.Text("※ Please note that while most settings will change instantly on\nload, Screen Mode and Resolution will not. These will be saved\nand loaded, but not take effect until you manually open the\nSystem Config menu, change something, and hit apply. Sorry!");
 
             ImGui.Text("Default:");
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text("The default setting that all other conditions will revert to");
+                ImGui.EndTooltip();
+            }
             ImGui.SameLine();
             ImGui.Indent(200);
             DrawComboBox("DefaultPreset", Plugin.PluginConfig.DefaultPreset, 200, out Plugin.PluginConfig.DefaultPreset, Presets);
             ImGui.Unindent(200);
 
             ImGui.Text("In Duty:");
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text("In any sort of instanced duty (anything through Duty Finder, solo duties, etc)\nexcept Eureka, Bozja, and Occult Crescent areas");
+                ImGui.EndTooltip();
+            }
             ImGui.SameLine();
             ImGui.Indent(200);
             DrawComboBox("InDutyPreset", Plugin.PluginConfig.InDutyPreset, 200, out Plugin.PluginConfig.InDutyPreset, Presets);
@@ -57,6 +69,12 @@ namespace GraphicsConfig
             ImGui.Unindent(200);
 
             ImGui.Text("Editing Character:");
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text("Character creation/using a fantasia/using the aesthetician");
+                ImGui.EndTooltip();
+            }
             ImGui.SameLine();
             ImGui.Indent(200);
             DrawComboBox("EditingCharacterPreset", Plugin.PluginConfig.EditingCharacterPreset, 200, out Plugin.PluginConfig.EditingCharacterPreset, Presets);
@@ -69,6 +87,12 @@ namespace GraphicsConfig
             ImGui.Unindent(200);
 
             ImGui.Text("In Combat:");
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text("Seperate from the duty preset, this is specifically overworld/non-instanced combat");
+                ImGui.EndTooltip();
+            }
             ImGui.SameLine();
             ImGui.Indent(200);
             DrawComboBox("CombatPreset", Plugin.PluginConfig.CombatPreset, 200, out Plugin.PluginConfig.CombatPreset, Presets);
@@ -87,18 +111,36 @@ namespace GraphicsConfig
             ImGui.Unindent(200);
 
             ImGui.Text("While in a city:");
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text("Finally, make limsa not laggy");
+                ImGui.EndTooltip();
+            }
             ImGui.SameLine();
             ImGui.Indent(200);
             DrawComboBox("CityPreset", Plugin.PluginConfig.CityPreset, 200, out Plugin.PluginConfig.CityPreset, Presets);
             ImGui.Unindent(200);
 
             ImGui.Text("While in a foray duty:");
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text("Specifically when you enter Eureka, Bozja, or Occult Crescent areas");
+                ImGui.EndTooltip();
+            }
             ImGui.SameLine();
             ImGui.Indent(200);
             DrawComboBox("ForayPreset", Plugin.PluginConfig.ForayPreset, 200, out Plugin.PluginConfig.ForayPreset, Presets);
             ImGui.Unindent(200);
 
             ImGui.Text("Device unplugged:");
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.BeginTooltip();
+                ImGui.Text("When you device indicates that it's using battery power - Will (obviously)\nnever trigger on desktop PCs or anything else that requires AC power\ninstead of having a battery");
+                ImGui.EndTooltip();
+            }
             ImGui.SameLine();
             ImGui.Indent(200);
             DrawComboBox("UnpluggedPreset", Plugin.PluginConfig.UnpluggedPreset, 200, out Plugin.PluginConfig.UnpluggedPreset, Presets);
