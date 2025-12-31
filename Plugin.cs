@@ -5,7 +5,9 @@ using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using GraphicsConfig.Classes;
+using Lumina.Excel.Sheets;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -28,6 +30,8 @@ namespace GraphicsConfig
         [PluginService] public static IGameConfig GameConfig { get; set; }
         [PluginService] public static ICondition Condition { get; set; }
         [PluginService] public static INotificationManager NotificationManager { get; set; }
+        [PluginService] public static IClientState ClientState { get; set; }
+        [PluginService] public static IDataManager DataManager { get; set; }
 
         public static Configuration PluginConfig { get; set; }
         private PluginCommandManager<Plugin> CommandManager;
@@ -36,9 +40,12 @@ namespace GraphicsConfig
 
         public static readonly CancellationTokenSource BatteryCheckingTask = new();
         public static bool PreviouslyCharging = false;
+        public static bool PreviouslyInCity = false;
+        public static bool PreviouslyInForay = false;
+        public static bool PreviouslyInForayForConditionSwitching = false;
         public static Notification NotifObject = new Notification();
 
-        public Plugin(IDalamudPluginInterface pluginInterface, IChatGui chat, IPartyList partyList, ICommandManager commands, ICondition conditions)
+        public Plugin(IDalamudPluginInterface pluginInterface, IChatGui chat, IPartyList partyList, ICommandManager commands, ICondition conditions, IClientState clientstate)
         {
             PluginInterface = pluginInterface;
             Chat = chat;
@@ -79,7 +86,6 @@ namespace GraphicsConfig
                 {
                     Chat.Print("Something went wrong with moving your presets to the new folder! Error: " + f.ToString());
                 }
-
             }
             if (!Directory.Exists(PresetDirectory)) { Directory.CreateDirectory(PresetDirectory); }
 
@@ -87,6 +93,7 @@ namespace GraphicsConfig
             CommandManager = new PluginCommandManager<Plugin>(this, commands);
 
             conditions.ConditionChange += ConditionChanged;
+            clientstate.TerritoryChanged += TerritoryChanged;
 
             PreviouslyCharging = SystemPower.IsCharging;
             //GameConfig.Changed += ConfigChange;
@@ -100,6 +107,93 @@ namespace GraphicsConfig
                     await Task.Delay(5000, BatteryCheckingTask.Token);
                 }
             }, BatteryCheckingTask.Token);
+        }
+
+        private void TerritoryChanged(ushort obj)
+        {
+            //TerritoryIntendedUse#0 City?
+            uint TerritoryIntendedUse = 9999;
+            try
+            {
+                if (ClientState != null)
+                {
+                    if (ClientState.TerritoryType != 0)
+                    {
+                        TerritoryIntendedUse = DataManager.GetExcelSheet<TerritoryType>().GetRow(ClientState.TerritoryType).TerritoryIntendedUse.RowId;
+                    }
+                }
+            }
+            catch (Exception f)
+            {
+                Plugin.PluginLog.Error("[GraphicsConfig] " + f.ToString());
+                //Silently ignore the error
+            }
+            if (TerritoryIntendedUse == 0)
+            {
+                if (!PreviouslyInCity)
+                {
+                    //We are in a city now
+                    if (PluginConfig.IsDebug) { Chat.Print("We're in a city!"); }
+                    PreviouslyInCity = true;
+                    if (PluginConfig.CityPreset != "None")
+                    {
+                        if (PluginConfig.IsDebug) { Print("City preset loaded because you warped into a city"); }
+                        ApplyConfig(PluginConfig.CityPreset, true);
+                    }
+                }
+            }
+            else
+            {
+                if (PreviouslyInCity)
+                {
+                    //We are no longer in a city
+                    if (PluginConfig.DefaultPreset != "None" & PluginConfig.CityPreset != "None")
+                    {
+                        if (PluginConfig.IsDebug) { Print("Default preset loaded because you left the city!"); }
+                        PreviouslyInCity = false;
+                        ApplyConfig(PluginConfig.DefaultPreset, true);
+                    }
+                }
+            }
+            if (PluginConfig.IsDebug)
+            {
+                Chat.Print(TerritoryIntendedUse.ToString());
+                List<string> PlacesInTerritory = new List<string>();
+                Chat.Print("Places that share this TerritoryIntendedUse:");
+                foreach (var Thing in DataManager.GetExcelSheet<TerritoryType>().Where(x => x.TerritoryIntendedUse.RowId == TerritoryIntendedUse))
+                {
+                    PlacesInTerritory.Add(Thing.PlaceName.Value.Name.ToString());
+                }
+                Thread.Sleep(1);
+            }
+
+            if (TerritoryIntendedUse == 41 /*Eureka*/ || TerritoryIntendedUse == 48 /*Bozja*/ || TerritoryIntendedUse == 61 /*Occult Crescent*/)
+            {
+                if (!PreviouslyInForay)
+                {
+                    //We are in a city now
+                    if (PluginConfig.IsDebug) { Chat.Print("We're in foray content!"); }
+                    PreviouslyInForay = true;
+                    if (PluginConfig.ForayPreset != "None")
+                    {
+                        if (PluginConfig.IsDebug) { Print("Foray preset loaded because you warped into foray content!"); }
+                        ApplyConfig(PluginConfig.ForayPreset, true);
+                    }
+                }
+            }
+            else
+            {
+                if (PreviouslyInForay)
+                {
+                    //We are no longer in a city
+                    if (PluginConfig.DefaultPreset != "None" & PluginConfig.ForayPreset != "None")
+                    {
+                        if (PluginConfig.IsDebug) { Print("Default preset loaded because you left foray content!"); }
+                        PreviouslyInForay = false;
+                        ApplyConfig(PluginConfig.DefaultPreset, true);
+                    }
+                }
+            }
         }
 
         //public void ConfigChange(object? sender, ConfigChangeEvent e)
@@ -179,6 +273,23 @@ namespace GraphicsConfig
 
         public void ConditionChanged(ConditionFlag flag, bool value)
         {
+            uint TerritoryIntendedUse = 9999;
+            try
+            {
+                if (ClientState != null)
+                {
+                    if (ClientState.TerritoryType != 0)
+                    {
+                        TerritoryIntendedUse = DataManager.GetExcelSheet<TerritoryType>().GetRow(ClientState.TerritoryType).TerritoryIntendedUse.RowId;
+                    }
+                }
+            }
+            catch(Exception f)
+            {
+                Plugin.PluginLog.Error("[GraphicsConfig] " + f.ToString());
+                //Silently ignore the error
+            }
+
             //Have a string option that stores the name of the preset to use in each case (or "none" for don't change it)
             //Have a dropbox next to each condition that lists the current presets
             switch (flag)
@@ -198,24 +309,38 @@ namespace GraphicsConfig
                 case ConditionFlag.BoundByDuty:
                 case ConditionFlag.BoundByDuty56:
                 case ConditionFlag.BoundByDuty95:
-                    if (value)
+                    //If we're in foray content, don't do anything
+                    if (TerritoryIntendedUse != 41 && TerritoryIntendedUse != 48 && TerritoryIntendedUse != 61)
                     {
-                        if (PluginConfig.IsDebug) Print("Flag started");
-                        if (PluginConfig.InDutyPreset != "None")
+                        if (value)
                         {
-                            ApplyConfig(PluginConfig.InDutyPreset, true);
+                            if (PluginConfig.IsDebug) Print("Duty Flag started");
+                            if (PluginConfig.InDutyPreset != "None")
+                            {
+                                ApplyConfig(PluginConfig.InDutyPreset, true);
+                            }
+                        }
+                        else
+                        {
+                            if (!PreviouslyInForayForConditionSwitching)
+                            {
+                                if (PluginConfig.IsDebug) Print("Duty Flag ended");
+                                if (PluginConfig.DefaultPreset != "None" & PluginConfig.InDutyPreset != "None")
+                                {
+                                    ApplyConfig(PluginConfig.DefaultPreset, true);
+                                }
+                            }
+                            else
+                            {
+                                PreviouslyInForayForConditionSwitching = false;
+                            }
                         }
                     }
                     else
                     {
-                        if (PluginConfig.IsDebug) Print("Flag ended");
-                        if (PluginConfig.DefaultPreset != "None" & PluginConfig.InDutyPreset != "None")
-                        {
-                            ApplyConfig(PluginConfig.DefaultPreset, true);
-                        }
+                        PreviouslyInForayForConditionSwitching = true;
                     }
                     break;
-
                 //case ConditionFlag.ChocoboRacing:
                 //    if (value)
                 //    {
@@ -549,9 +674,9 @@ namespace GraphicsConfig
                 {
                     if (PluginConfig.IsDebug)
                     {
-                        Print("Loading/Setting " + property.Name + " | Value is set to:" + property.GetValue(CurrentConfig) + " | uint: " + (uint)property.GetValue(CurrentConfig));
+                        //Print("Loading/Setting " + property.Name + " | Value is set to:" + property.GetValue(CurrentConfig) + " | uint: " + (uint)property.GetValue(CurrentConfig));
                     }
-                    if (!OldConfig & ((property.Name.ToLower() == "screenwidth" & (uint)property.GetValue(CurrentConfig) == 0) | (property.Name.ToLower() == "screenheight" & (uint)property.GetValue(CurrentConfig) == 0))) 
+                    if (!OldConfig & ((property.Name.ToLower() == "screenwidth" & (uint)property.GetValue(CurrentConfig) == 0) | (property.Name.ToLower() == "screenheight" & (uint)property.GetValue(CurrentConfig) == 0)))
                     {
                         OldConfig = true;
                         Print("\"" + PresetName + "\" is an older Graphics Config preset - Please load it and re-save it order to avoid any possible issues.", ColorType.Warn);
@@ -559,7 +684,7 @@ namespace GraphicsConfig
                     if (OldConfig)
                     {
                         if (property.Name.ToLower() == "screenwidth" | property.Name.ToLower() == "screenheight" | property.Name.ToLower() == "screenmode")
-                        { 
+                        {
                             //Do nothing
                         }
                         ApplySetting(property.Name, (uint)property.GetValue(CurrentConfig));

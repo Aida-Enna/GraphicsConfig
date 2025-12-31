@@ -17,6 +17,8 @@ namespace GraphicsConfig
         public string PerformancePreset = "None";
         public string WatchingCutscenePreset = "None";
         public string UnpluggedPreset = "None";
+        public string CityPreset = "None";
+        public string ForayPreset = "None";
         public bool SavedOnce = false;
         public bool IsDebug = false;
 

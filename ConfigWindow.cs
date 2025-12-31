@@ -86,6 +86,18 @@ namespace GraphicsConfig
             DrawComboBox("WatchingCutscenePreset", Plugin.PluginConfig.WatchingCutscenePreset, 200, out Plugin.PluginConfig.WatchingCutscenePreset, Presets);
             ImGui.Unindent(200);
 
+            ImGui.Text("While in a city:");
+            ImGui.SameLine();
+            ImGui.Indent(200);
+            DrawComboBox("CityPreset", Plugin.PluginConfig.CityPreset, 200, out Plugin.PluginConfig.CityPreset, Presets);
+            ImGui.Unindent(200);
+
+            ImGui.Text("While in a foray duty:");
+            ImGui.SameLine();
+            ImGui.Indent(200);
+            DrawComboBox("ForayPreset", Plugin.PluginConfig.ForayPreset, 200, out Plugin.PluginConfig.ForayPreset, Presets);
+            ImGui.Unindent(200);
+
             ImGui.Text("Device unplugged:");
             ImGui.SameLine();
             ImGui.Indent(200);
