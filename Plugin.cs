@@ -1,5 +1,6 @@
 ﻿using BatteryGauge.Battery;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.Config;
 using Dalamud.Interface.ImGuiNotification;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
@@ -96,7 +97,7 @@ namespace GraphicsConfig
             clientstate.TerritoryChanged += TerritoryChanged;
 
             PreviouslyCharging = SystemPower.IsCharging;
-            //GameConfig.Changed += ConfigChange;
+            GameConfig.Changed += ConfigChange;
 
             Task.Run(async () =>
             {
@@ -107,6 +108,19 @@ namespace GraphicsConfig
                     await Task.Delay(5000, BatteryCheckingTask.Token);
                 }
             }, BatteryCheckingTask.Token);
+        }
+
+        private void ConfigChange(object? sender, ConfigChangeEvent e)
+        {
+            if (PluginConfig.IsDebug)
+            {
+                if (e.Option.ToString() != "CameraZoom" && e.Option.ToString() != "ChatType")
+                {
+                    Chat.Print("Setting: " + e.Option.ToString());
+                    GameConfig.System.TryGetUInt(e.Option.ToString(), out uint TestVariable);
+                    Chat.Print("Changed to: " + TestVariable.ToString());
+                }
+            }
         }
 
         private void TerritoryChanged(ushort obj)
@@ -157,9 +171,9 @@ namespace GraphicsConfig
             }
             if (PluginConfig.IsDebug)
             {
-                Chat.Print(TerritoryIntendedUse.ToString());
+                Chat.Print("[GraphicsConfig] " + TerritoryIntendedUse.ToString());
                 List<string> PlacesInTerritory = new List<string>();
-                Chat.Print("Places that share this TerritoryIntendedUse:");
+                Chat.Print("[GraphicsConfig] Places that share this TerritoryIntendedUse:");
                 foreach (var Thing in DataManager.GetExcelSheet<TerritoryType>().Where(x => x.TerritoryIntendedUse.RowId == TerritoryIntendedUse))
                 {
                     PlacesInTerritory.Add(Thing.PlaceName.Value.Name.ToString());
@@ -195,16 +209,6 @@ namespace GraphicsConfig
                 }
             }
         }
-
-        //public void ConfigChange(object? sender, ConfigChangeEvent e)
-        //{
-        //    if (e.Option.ToString() != "CameraZoom" && e.Option.ToString() != "ChatType")
-        //    {
-        //        Chat.Print("Setting: " + e.Option.ToString());
-        //        GameConfig.System.TryGetUInt(e.Option.ToString(), out uint TestVariable);
-        //        Chat.Print("Changed to: " + TestVariable.ToString());
-        //    }
-        //}
 
         public static void CheckBattery()
         {
