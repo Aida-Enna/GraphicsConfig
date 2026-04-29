@@ -123,7 +123,7 @@ namespace GraphicsConfig
             }
         }
 
-        private void TerritoryChanged(ushort obj)
+        private void TerritoryChanged(uint obj)
         {
             //TerritoryIntendedUse#0 City?
             uint TerritoryIntendedUse = 9999;
